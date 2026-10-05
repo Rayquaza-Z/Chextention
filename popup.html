@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Taskmaster</title>
+  <style>
+    body { width: 300px; padding: 15px; font-family: sans-serif; background-color: #f9f9f9; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; align-items: center; margin-bottom: 8px; padding: 5px; background: white; border-radius: 5px; }
+    .completed { text-decoration: line-through; color: #aaa; }
+    input[type="text"] { width: 100%; padding: 5px; margin-bottom: 10px; box-sizing: border-box; }
+    .controls { display: flex; justify-content: space-between; margin-bottom: 15px; }
+    button { background: #ff4757; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>🎯 My Tasks</h2>
+  
+  <input type="text" id="taskInput" placeholder="What needs to be done?">
+  <div class="controls">
+    <label><input type="checkbox" id="dailyCheck"> Daily?</label>
+    <button id="addBtn">Add Task</button>
+  </div>
+  
+  <ul id="taskList"></ul>
+
+  <hr>
+  
+  <h4>🤡 The Slacker Image</h4>
+  <p style="font-size: 12px; color: gray;">Upload the image that will block your screen if you go 1 hour without checking off a task.</p>
+  <input type="file" id="imageInput" accept="image/*">
+  <img id="preview" style="max-width: 100%; display: none; margin-top: 10px; border-radius: 10px;">
+  
+  <script src="popup.js"></script>
+</body>

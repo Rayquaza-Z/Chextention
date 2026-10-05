@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Chextention",
+  "version": "1.0",
+  "description": "Daily checklist that blocks your screen with a silly image if you slack off.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
