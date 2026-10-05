@@ -1,7 +1,6 @@
 const ALARM_NAME = "slackerAlarm";
-const TIME_LIMIT_MINUTES = 60; // 1 hour
+const TIME_LIMIT_MINUTES = 60;
 
-// Run this when the browser opens
 chrome.runtime.onStartup.addListener(initializeExtension);
 chrome.runtime.onInstalled.addListener(initializeExtension);
 
@@ -11,56 +10,72 @@ function initializeExtension() {
 }
 
 function resetAlarm() {
+  chrome.storage.local.set({ punishmentActive: false });
   chrome.alarms.create(ALARM_NAME, { delayInMinutes: TIME_LIMIT_MINUTES });
-  console.log("Timer reset for 60 minutes!");
+  
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => chrome.tabs.sendMessage(tab.id, { action: 'removePunishment' }).catch(() => {}));
+  });
 }
 
-// Listen for the "I finished a task" message from popup.js
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'taskCompleted') {
-    resetAlarm(); 
+    resetAlarm();
+  } else if (message.action === 'snooze') {
+    chrome.storage.local.set({ punishmentActive: false });
+    chrome.alarms.create(ALARM_NAME, { delayInMinutes: 5 });
+    
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => chrome.tabs.sendMessage(tab.id, { action: 'removePunishment' }).catch(() => {}));
+    });
   }
 });
 
-// When the alarm rings, execute the punishment!
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) {
-    // Find the tab the user is currently looking at
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs.length > 0) {
-        // Inject the punishment script into that tab
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          files: ['content.js']
-        });
-      }
+    chrome.storage.local.set({ punishmentActive: true }, () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length > 0) {
+          chrome.scripting.executeScript({ target: { tabId: tabs[0].id }, files: ['content.js'] }).catch(() => {});
+        }
+      });
     });
-    // Keep nagging them every 1 minute until they finish a task
-    chrome.alarms.create(ALARM_NAME, { delayInMinutes: 1 }); 
   }
 });
 
-// Logic to uncheck "Daily" tasks if it is a new day
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  chrome.storage.local.get(['punishmentActive'], (data) => {
+    if (data.punishmentActive) {
+      chrome.scripting.executeScript({ target: { tabId: activeInfo.tabId }, files: ['content.js'] }).catch(() => {});
+    }
+  });
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    chrome.storage.local.get(['punishmentActive'], (data) => {
+      if (data.punishmentActive) {
+        chrome.scripting.executeScript({ target: { tabId: tabId }, files: ['content.js'] }).catch(() => {});
+      }
+    });
+  }
+});
+
 function checkDailyReset() {
   chrome.storage.local.get(['tasks', 'lastResetDate'], (data) => {
     const today = new Date().toDateString();
-    
     if (data.lastResetDate !== today) {
       let tasks = data.tasks || [];
       let changed = false;
-      
       tasks = tasks.map(task => {
         if (task.isDaily) {
-          task.completed = false; // Uncheck it!
+          task.completed = false;
           changed = true;
         }
         return task;
       });
-
-      if (changed) {
-        chrome.storage.local.set({ tasks, lastResetDate: today });
-      } else {
-        chrome.storage.local.set({ lastResetDate: today });
-      }
+      if (changed) chrome.storage.local.set({ tasks, lastResetDate: today });
+      else chrome.storage.local.set({ lastResetDate: today });
     }
   });
+}

@@ -4,19 +4,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const addBtn = document.getElementById('addBtn');
   const taskList = document.getElementById('taskList');
   const imageInput = document.getElementById('imageInput');
-  const preview = document.getElementById('preview');
+  const previewContainer = document.getElementById('previewContainer');
 
-  // Load existing data from the browser's local storage
-  chrome.storage.local.get(['tasks', 'sillyImage'], (data) => {
+  chrome.storage.local.get(['tasks', 'sillyImages'], (data) => {
     const tasks = data.tasks || [];
     renderTasks(tasks);
-    if (data.sillyImage) {
-      preview.src = data.sillyImage;
-      preview.style.display = 'block';
+    if (data.sillyImages && data.sillyImages.length > 0) {
+      renderPreviews(data.sillyImages);
     }
   });
 
-  // When "Add" is clicked, save the new task
   addBtn.addEventListener('click', () => {
     const text = taskInput.value.trim();
     if (!text) return;
@@ -38,28 +35,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Convert uploaded image to Base64 and save it to storage
   imageInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (files.length === 0) return;
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Image = event.target.result;
-      chrome.storage.local.set({ sillyImage: base64Image }, () => {
-        preview.src = base64Image;
-        preview.style.display = 'block';
-      });
-    };
-    reader.readAsDataURL(file);
+    let base64Images = [];
+    let filesProcessed = 0;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        base64Images.push(event.target.result);
+        filesProcessed++;
+        
+        if (filesProcessed === files.length) {
+          chrome.storage.local.set({ sillyImages: base64Images }, () => {
+            renderPreviews(base64Images);
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   });
 
-  // Draw the checklist on the screen
+  function renderPreviews(images) {
+    previewContainer.innerHTML = '';
+    images.forEach(src => {
+      const img = document.createElement('img');
+      img.src = src;
+      img.style.height = '60px';
+      img.style.borderRadius = '5px';
+      previewContainer.appendChild(img);
+    });
+  }
+
   function renderTasks(tasks) {
     taskList.innerHTML = '';
     tasks.forEach((task, index) => {
       const li = document.createElement('li');
-      
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = task.completed;
@@ -68,14 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
       span.textContent = task.text + (task.isDaily ? ' 🔄' : '');
       if (task.completed) span.className = 'completed';
 
-      // When a checkbox is clicked
       checkbox.addEventListener('change', () => {
         tasks[index].completed = checkbox.checked;
         chrome.storage.local.set({ tasks }, () => {
           renderTasks(tasks);
-          
           if (checkbox.checked) {
-             // TELL THE BACKGROUND SCRIPT TO RESET THE 1-HOUR TIMER!
              chrome.runtime.sendMessage({ action: 'taskCompleted' });
           }
         });
@@ -86,3 +96,4 @@ document.addEventListener('DOMContentLoaded', () => {
       taskList.appendChild(li);
     });
   }
+});
