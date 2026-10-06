@@ -8,8 +8,14 @@ chrome.runtime.onMessage.addListener((message) => {
 if (!document.getElementById('taskmaster-punishment-container')) {
   
   chrome.storage.local.get(['sillyImages'], (data) => {
-    const images = data.sillyImages;
-    if (!images || images.length === 0) return;
+    let images = data.sillyImages;
+    if (!images || images.length === 0) {
+      images = [
+        chrome.runtime.getURL('assets/default1.jpg'),
+        chrome.runtime.getURL('assets/default2.jpg'),
+        chrome.runtime.getURL('assets/default3.jpg')
+      ];
+    }
 
     const container = document.createElement('div');
     container.id = 'taskmaster-punishment-container';
@@ -23,6 +29,12 @@ if (!document.getElementById('taskmaster-punishment-container')) {
     container.style.backgroundColor = 'rgba(0,0,0,0.5)';
     document.body.appendChild(container);
 
+    const audio = document.createElement('audio');
+    audio.src = chrome.runtime.getURL('assets/alarm.mp3');
+    audio.loop = true;
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    container.appendChild(audio);
+
     const totalImages = 80;
     let currentImages = 0;
 
@@ -35,31 +47,52 @@ if (!document.getElementById('taskmaster-punishment-container')) {
         box.style.top = '50%';
         box.style.left = '50%';
         box.style.transform = 'translate(-50%, -50%)';
-        box.style.backgroundColor = 'black';
-        box.style.padding = '40px';
-        box.style.borderRadius = '20px';
-        box.style.border = '5px solid #ff4757';
+        box.style.backgroundColor = '#FFD700';
+        box.style.padding = '60px 80px';
+        box.style.border = '8px solid #000';
         box.style.textAlign = 'center';
         box.style.pointerEvents = 'auto';
-        box.style.boxShadow = '0 0 50px #ff4757';
+        box.style.boxShadow = '16px 16px 0px #000';
+        box.style.display = 'flex';
+        box.style.flexDirection = 'column';
+        box.style.alignItems = 'center';
+        box.style.gap = '30px';
 
         const text = document.createElement('h1');
         text.textContent = "GET BACK TO WORK!";
-        text.style.color = '#ff4757';
-        text.style.fontSize = '4rem';
-        text.style.fontFamily = 'Impact, sans-serif';
-        text.style.margin = '0 0 20px 0';
+        text.style.color = '#000';
+        text.style.fontSize = '5rem';
+        text.style.fontFamily = '"Courier New", Courier, monospace';
+        text.style.fontWeight = '900';
+        text.style.textTransform = 'uppercase';
+        text.style.margin = '0';
+        text.style.letterSpacing = '-2px';
 
         const snoozeBtn = document.createElement('button');
         snoozeBtn.textContent = "Snooze (5 Minutes)";
-        snoozeBtn.style.padding = '15px 30px';
-        snoozeBtn.style.fontSize = '1.5rem';
+        snoozeBtn.style.padding = '20px 40px';
+        snoozeBtn.style.fontSize = '2rem';
         snoozeBtn.style.cursor = 'pointer';
-        snoozeBtn.style.backgroundColor = '#ff4757';
-        snoozeBtn.style.color = 'white';
-        snoozeBtn.style.border = 'none';
-        snoozeBtn.style.borderRadius = '10px';
-        snoozeBtn.style.fontWeight = 'bold';
+        snoozeBtn.style.backgroundColor = '#FF4757';
+        snoozeBtn.style.color = '#000';
+        snoozeBtn.style.border = '6px solid #000';
+        snoozeBtn.style.fontWeight = '900';
+        snoozeBtn.style.fontFamily = 'sans-serif';
+        snoozeBtn.style.boxShadow = '8px 8px 0px #000';
+        snoozeBtn.style.transition = 'transform 0.1s, box-shadow 0.1s';
+        
+        snoozeBtn.onmousedown = () => {
+          snoozeBtn.style.transform = 'translate(4px, 4px)';
+          snoozeBtn.style.boxShadow = '4px 4px 0px #000';
+        };
+        snoozeBtn.onmouseup = () => {
+          snoozeBtn.style.transform = 'none';
+          snoozeBtn.style.boxShadow = '8px 8px 0px #000';
+        };
+        snoozeBtn.onmouseleave = () => {
+          snoozeBtn.style.transform = 'none';
+          snoozeBtn.style.boxShadow = '8px 8px 0px #000';
+        };
         
         snoozeBtn.addEventListener('click', () => {
           chrome.runtime.sendMessage({ action: 'snooze' });

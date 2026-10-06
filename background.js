@@ -1,5 +1,5 @@
 const ALARM_NAME = "slackerAlarm";
-const TIME_LIMIT_MINUTES = 60;
+const TIME_LIMIT_MINUTES = 20;
 
 chrome.runtime.onStartup.addListener(initializeExtension);
 chrome.runtime.onInstalled.addListener(initializeExtension);
