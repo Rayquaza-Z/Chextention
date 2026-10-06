@@ -9,7 +9,8 @@
   "permissions": [
     "storage",
     "alarms",
-    "scripting"
+    "scripting",
+    "offscreen"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -9,9 +9,30 @@ function initializeExtension() {
   checkDailyReset();
 }
 
+async function playAudio() {
+  const existingContexts = await chrome.runtime.getContexts({});
+  const offscreenDocument = existingContexts.find(
+    (c) => c.contextType === 'OFFSCREEN_DOCUMENT'
+  );
+
+  if (!offscreenDocument) {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen.html',
+      reasons: ['AUDIO_PLAYBACK'],
+      justification: 'To play the alarm sound for the taskmaster.',
+    });
+  }
+  chrome.runtime.sendMessage({ action: 'playAlarm' });
+}
+
+async function stopAudio() {
+  chrome.runtime.sendMessage({ action: 'stopAlarm' }).catch(() => {});
+}
+
 function resetAlarm() {
   chrome.storage.local.set({ punishmentActive: false });
   chrome.alarms.create(ALARM_NAME, { delayInMinutes: TIME_LIMIT_MINUTES });
+  stopAudio();
   
   chrome.tabs.query({}, (tabs) => {
     tabs.forEach(tab => chrome.tabs.sendMessage(tab.id, { action: 'removePunishment' }).catch(() => {}));
@@ -24,6 +45,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === 'snooze') {
     chrome.storage.local.set({ punishmentActive: false });
     chrome.alarms.create(ALARM_NAME, { delayInMinutes: 5 });
+    stopAudio();
     
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => chrome.tabs.sendMessage(tab.id, { action: 'removePunishment' }).catch(() => {}));
@@ -33,6 +55,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) {
+    playAudio();
     chrome.storage.local.set({ punishmentActive: true }, () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {

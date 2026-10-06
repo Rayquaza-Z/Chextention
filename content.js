@@ -29,12 +29,6 @@ if (!document.getElementById('taskmaster-punishment-container')) {
     container.style.backgroundColor = 'rgba(0,0,0,0.5)';
     document.body.appendChild(container);
 
-    const audio = document.createElement('audio');
-    audio.src = chrome.runtime.getURL('assets/alarm.mp3');
-    audio.loop = true;
-    audio.play().catch(e => console.log('Audio play failed:', e));
-    container.appendChild(audio);
-
     const totalImages = 80;
     let currentImages = 0;
 
